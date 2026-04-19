@@ -19,10 +19,12 @@ public class InquiryService {
     @Autowired private InquiryRepository inquiryRepository;
     @Autowired private LandRepository landRepository;
     @Autowired private UserRepository userRepository;
-
+    @Autowired
+    private EmailService emailService;
     // Send inquiry (buyer contacts seller directly)
     @Transactional
     public Inquiry sendInquiry(Long landId, InquiryRequest request, String buyerEmail) {
+
         Land land = landRepository.findById(landId)
                 .orElseThrow(() -> new RuntimeException("Land not found"));
 
@@ -32,7 +34,9 @@ public class InquiryService {
                 .status(Inquiry.InquiryStatus.PENDING)
                 .build();
 
-        // If user is logged in
+        String finalBuyerEmail = null;
+
+        // Logged-in user
         if (buyerEmail != null) {
             User buyer = userRepository.findByEmail(buyerEmail).orElse(null);
             if (buyer != null) {
@@ -40,15 +44,33 @@ public class InquiryService {
                 inquiry.setInquirerName(buyer.getFullName());
                 inquiry.setInquirerPhone(buyer.getPhone());
                 inquiry.setInquirerEmail(buyer.getEmail());
+
+                finalBuyerEmail = buyer.getEmail();
             }
         } else {
-            // Guest inquiry
+            // Guest user
             inquiry.setInquirerName(request.getInquirerName());
             inquiry.setInquirerPhone(request.getInquirerPhone());
             inquiry.setInquirerEmail(request.getInquirerEmail());
+
+            finalBuyerEmail = request.getInquirerEmail();
         }
 
-        return inquiryRepository.save(inquiry);
+        // ✅ Save inquiry
+        Inquiry savedInquiry = inquiryRepository.save(inquiry);
+
+        // ✅ Send email
+        try {
+            emailService.sendInquiryEmail(
+                    land.getOwner().getEmail(),
+                    finalBuyerEmail,
+                    request.getMessage()
+            );
+        } catch (Exception e) {
+            System.out.println("Email failed: " + e.getMessage());
+        }
+
+        return savedInquiry;
     }
 
     // Get inquiries for a specific land (seller view)
@@ -76,4 +98,6 @@ public class InquiryService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return inquiryRepository.findByBuyer(buyer);
     }
+    
+    
 }

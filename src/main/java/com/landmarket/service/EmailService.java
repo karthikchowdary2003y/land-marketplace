@@ -39,4 +39,34 @@ public class EmailService {
 
         mailSender.send(message);
     }
+    public void sendInquiryEmail(String toEmail, String buyerEmail, String messageText) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(toEmail);
+        message.setSubject("New Inquiry for Your Land Listing - LandMart");
+
+        message.setText(
+        	    "Hello,\n\n" +
+
+        	    "You have received a new inquiry for your land listing on LandMart.com.\n\n" +
+
+        	    "📌 Inquiry Details:\n" +
+        	  
+        	    
+        	    "👤 Buyer Email : " + buyerEmail + "\n" +
+        	    
+        	    " MESSAGE      : " + messageText + "\n" +
+
+   
+        	    "Thank you for using LandMart.com.\n\n" +
+			"Application Created by Karthik  .\n\n" +
+
+        	    "Best regards,\n" +
+        	    "LandMart Team\n" +
+        	    "Your Trusted Land Marketplace"
+        	);
+
+        mailSender.send(message);
+    }
 }

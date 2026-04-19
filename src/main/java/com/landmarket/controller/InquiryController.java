@@ -3,6 +3,7 @@ package com.landmarket.controller;
 import com.landmarket.dto.ApiResponse;
 import com.landmarket.dto.InquiryRequest;
 import com.landmarket.model.Inquiry;
+import com.landmarket.service.EmailService;
 import com.landmarket.service.InquiryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ public class InquiryController {
 
     @Autowired
     private InquiryService inquiryService;
+    @Autowired
+    private EmailService emailService;
 
     /**
      * POST /api/inquiries/land/{landId}
