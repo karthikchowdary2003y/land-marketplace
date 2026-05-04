@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "lands")
 @EntityListeners(AuditingEntityListener.class)
@@ -101,6 +103,8 @@ public class Land {
     @Column(nullable = false)
     @Builder.Default
     private int viewCount = 0;
+
+      @JsonIgnore 
 
     @OneToMany(mappedBy = "land", cascade = CascadeType.ALL)
     private List<Inquiry> inquiries;
