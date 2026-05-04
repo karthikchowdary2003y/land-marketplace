@@ -66,9 +66,10 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // ✅ Public endpoints
+                // ✅ Root and health
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/health").permitAll()
+                // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
@@ -79,8 +80,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/images/**").permitAll()
                 .requestMatchers("/api/images/land/**").permitAll()
                 .requestMatchers("/api/images/serve/**").permitAll()
-
-                // 🔒 Protected endpoints
+                // Protected endpoints
                 .requestMatchers("/api/lands/my-listings").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/lands").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/lands/**").authenticated()
@@ -99,11 +99,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // ✅ FIXED — reads from application.properties instead of hardcoded localhost
+        // ✅ FIXED — reads from application.properties
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        config.setAllowedOrigins(origins);
-
+        config.setAllowedOriginPatterns(origins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
