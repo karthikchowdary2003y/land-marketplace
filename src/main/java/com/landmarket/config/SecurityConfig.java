@@ -66,23 +66,21 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
+                // ✅ Public endpoints
+                .requestMatchers("/").permitAll()
+                .requestMatchers("/health").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**").permitAll()
                 .requestMatchers("/swagger-ui.html").permitAll()
                 .requestMatchers("/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/lands/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/lands/search").permitAll()
-                
-                
                 .requestMatchers("/uploads/**").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/lands/**").permitAll()
                 .requestMatchers("/api/images/**").permitAll()
                 .requestMatchers("/api/images/land/**").permitAll()
                 .requestMatchers("/api/images/serve/**").permitAll()
-                
-                // Protected endpoints
+
+                // 🔒 Protected endpoints
                 .requestMatchers("/api/lands/my-listings").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/lands").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/lands/**").authenticated()
@@ -101,7 +99,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:*"));
+
+        // ✅ FIXED — reads from application.properties instead of hardcoded localhost
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        config.setAllowedOrigins(origins);
+
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
