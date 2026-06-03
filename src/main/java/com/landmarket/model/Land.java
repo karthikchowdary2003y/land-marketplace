@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-<<<<<<< HEAD
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -32,10 +31,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-=======
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
->>>>>>> 9669594225bc728bb0f17da2da172c67b996a61e
 @Entity
 @Table(name = "lands")
 @EntityListeners(AuditingEntityListener.class)
@@ -129,12 +125,9 @@ public class Land {
     @Builder.Default
     private int viewCount = 0;
 
-<<<<<<< HEAD
-    @JsonIgnore 
-=======
-      @JsonIgnore 
 
->>>>>>> 9669594225bc728bb0f17da2da172c67b996a61e
+
+
     @OneToMany(mappedBy = "land", cascade = CascadeType.ALL)
     private List<Inquiry> inquiries;
 
