@@ -5,6 +5,8 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -22,6 +24,7 @@ public class Inquiry {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "land_id", nullable = false)
+    @JsonIgnoreProperties({"inquiries"}) 
     private Land land;
 
     @ManyToOne(fetch = FetchType.LAZY)
