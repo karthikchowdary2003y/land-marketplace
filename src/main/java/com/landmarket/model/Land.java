@@ -1,5 +1,6 @@
 package com.landmarket.model;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,12 +41,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 
-public class Land {
+public class Land implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
     @NotBlank
     @Column(nullable = false)
     private String title;

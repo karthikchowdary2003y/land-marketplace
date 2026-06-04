@@ -9,6 +9,8 @@ import com.landmarket.repository.LandRepository;
 import com.landmarket.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class LandService {
 
     // ============ CREATE LAND LISTING ============
     @Transactional
+    @CacheEvict(value = {"lands", "landSearch"}, allEntries = true)
     public LandResponse createLand(LandRequest request, String ownerEmail,
                                    List<MultipartFile> images) throws IOException {
         User owner = userRepository.findByEmail(ownerEmail)
@@ -63,7 +66,6 @@ public class LandService {
                 .active(true)
                 .build();
 
-        // Handle image uploads
         if (images != null && !images.isEmpty()) {
             List<String> imagePaths = saveImages(images, owner.getId());
             land.setImages(String.join(",", imagePaths));
@@ -74,6 +76,8 @@ public class LandService {
     }
 
     // ============ GET ALL LANDS (Public) ============
+    // Cache key is unique per page + size + sortBy combination
+    @Cacheable(value = "lands", key = "#page + '-' + #size + '-' + #sortBy")
     public Page<LandResponse> getAllLands(int page, int size, String sortBy) {
         Sort sort = Sort.by(Sort.Direction.DESC, sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -81,6 +85,7 @@ public class LandService {
     }
 
     // ============ GET SINGLE LAND (Public - shows owner contact) ============
+    // NOTE: Not cached because it increments viewCount on every call
     @Transactional
     public LandResponse getLandById(Long id) {
         Land land = landRepository.findById(id)
@@ -90,7 +95,6 @@ public class LandService {
             throw new RuntimeException("Land listing is not available");
         }
 
-        // Increment view count
         land.setViewCount(land.getViewCount() + 1);
         landRepository.save(land);
 
@@ -98,6 +102,11 @@ public class LandService {
     }
 
     // ============ SEARCH LANDS ============
+    // Cache key covers all search params so different searches get their own cache entry
+    @Cacheable(value = "landSearch", key = "#searchReq.keyword + '-' + #searchReq.city + '-' " +
+            "+ #searchReq.state + '-' + #searchReq.landType + '-' + #searchReq.minPrice + '-' " +
+            "+ #searchReq.maxPrice + '-' + #searchReq.minArea + '-' + #searchReq.maxArea + '-' " +
+            "+ #searchReq.status + '-' + #searchReq.page + '-' + #searchReq.size + '-' + #searchReq.sortBy")
     public Page<LandResponse> searchLands(LandSearchRequest searchReq) {
         Sort sort = Sort.by(
                 "asc".equalsIgnoreCase(searchReq.getSortDir()) ?
@@ -106,13 +115,11 @@ public class LandService {
         );
         Pageable pageable = PageRequest.of(searchReq.getPage(), searchReq.getSize(), sort);
 
-        // If keyword given, use text search
         if (searchReq.getKeyword() != null && !searchReq.getKeyword().isBlank()) {
             return landRepository.searchByKeyword(searchReq.getKeyword(), pageable)
                     .map(this::mapToResponse);
         }
 
-        // Advanced filter search
         return landRepository.searchLands(
                 searchReq.getCity(),
                 searchReq.getState(),
@@ -127,6 +134,8 @@ public class LandService {
     }
 
     // ============ MY LISTINGS (Seller view) ============
+    // Cached per seller email — each seller sees only their own listings
+    @Cacheable(value = "myListings", key = "#ownerEmail")
     public List<LandResponse> getMyListings(String ownerEmail) {
         User owner = userRepository.findByEmail(ownerEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -136,6 +145,7 @@ public class LandService {
 
     // ============ UPDATE LAND ============
     @Transactional
+    @CacheEvict(value = {"lands", "landSearch", "myListings"}, allEntries = true)
     public LandResponse updateLand(Long id, LandRequest request, String ownerEmail,
                                    List<MultipartFile> newImages) throws IOException {
         Land land = landRepository.findById(id)
@@ -174,6 +184,7 @@ public class LandService {
 
     // ============ DELETE LAND ============
     @Transactional
+    @CacheEvict(value = {"lands", "landSearch", "myListings"}, allEntries = true)
     public void deleteLand(Long id, String ownerEmail) {
         Land land = landRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Land not found"));
@@ -192,6 +203,7 @@ public class LandService {
 
     // ============ MARK AS SOLD ============
     @Transactional
+    @CacheEvict(value = {"lands", "landSearch", "myListings"}, allEntries = true)
     public LandResponse markAsSold(Long id, String ownerEmail) {
         Land land = landRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Land not found"));
@@ -247,19 +259,17 @@ public class LandService {
         response.setViewCount(land.getViewCount());
         response.setCreatedAt(land.getCreatedAt());
 
-        // Parse image paths
         if (land.getImages() != null && !land.getImages().isBlank()) {
             response.setImages(Arrays.asList(land.getImages().split(",")));
         } else {
             response.setImages(new ArrayList<>());
         }
 
-        // ** KEY FEATURE: Direct owner contact - No Middleman **
         LandResponse.OwnerInfo ownerInfo = new LandResponse.OwnerInfo();
         ownerInfo.setId(land.getOwner().getId());
         ownerInfo.setFullName(land.getOwner().getFullName());
-        ownerInfo.setPhone(land.getOwner().getPhone());     // Direct call!
-        ownerInfo.setEmail(land.getOwner().getEmail());     // Direct email!
+        ownerInfo.setPhone(land.getOwner().getPhone());
+        ownerInfo.setEmail(land.getOwner().getEmail());
         ownerInfo.setCity(land.getOwner().getCity());
         ownerInfo.setState(land.getOwner().getState());
         ownerInfo.setProfileImage(land.getOwner().getProfileImage());
