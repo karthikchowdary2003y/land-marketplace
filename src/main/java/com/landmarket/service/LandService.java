@@ -1,6 +1,7 @@
 package com.landmarket.service;
 
 import com.landmarket.dto.LandRequest;
+
 import com.landmarket.dto.LandResponse;
 import com.landmarket.dto.LandSearchRequest;
 import com.landmarket.model.Land;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.cloudinary.Cloudinary;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -27,6 +30,9 @@ public class LandService {
 
     @Autowired private LandRepository landRepository;
     @Autowired private UserRepository userRepository;
+    
+    @Autowired
+    private Cloudinary cloudinary;
 
     @Value("${app.upload.dir}")
     private String uploadDir;
@@ -219,19 +225,24 @@ public class LandService {
 
     // ============ IMAGE UPLOAD ============
     private List<String> saveImages(List<MultipartFile> images, Long userId) throws IOException {
-        List<String> savedPaths = new ArrayList<>();
-        Path uploadPath = Paths.get(uploadDir, String.valueOf(userId));
-        Files.createDirectories(uploadPath);
+        List<String> imageUrls = new ArrayList<>();
 
         for (MultipartFile image : images) {
             if (!image.isEmpty()) {
-                String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-                Path filePath = uploadPath.resolve(fileName);
-                Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-                savedPaths.add("/uploads/land-images/" + userId + "/" + fileName);
+
+                Map uploadResult = cloudinary.uploader().upload(
+                        image.getBytes(),
+                        Map.of(
+                                "folder", "landmart"
+                        )
+                );
+
+                String imageUrl = uploadResult.get("secure_url").toString();
+                imageUrls.add(imageUrl);
             }
         }
-        return savedPaths;
+
+        return imageUrls;
     }
 
     // ============ MAPPER ============
