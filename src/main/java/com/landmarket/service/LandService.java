@@ -268,7 +268,7 @@ public class LandService {
         response.setElectricity(land.isElectricity());
         response.setFencing(land.isFencing());
         response.setViewCount(land.getViewCount());
-        response.setCreatedAt(land.getCreatedAt());
+        response.setCreatedAt(land.getCreatedAt() != null ? land.getCreatedAt().toString() : null);
 
         if (land.getImages() != null && !land.getImages().isBlank()) {
             response.setImages(Arrays.asList(land.getImages().split(",")));
