@@ -4,7 +4,6 @@ import com.landmarket.model.Land;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -31,7 +30,7 @@ public class LandResponse {
     private boolean fencing;
     private List<String> images;
     private int viewCount;
-    private LocalDateTime createdAt;
+    private String createdAt;
 
     // *** NO MIDDLEMAN - Direct Owner Contact Info ***
     private OwnerInfo owner;
